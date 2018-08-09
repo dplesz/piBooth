@@ -1,0 +1,29 @@
+{
+	"camera": {
+		"image_width": 2592,
+		"image_height": 1944,
+		"framerate": 24,
+		"sharpness": 0,
+		"contrast": 0,
+		"brightness": 50,
+		"saturation": 0,
+		"ISO": 0,
+		"video_stabilization": false,
+		"exposure_compensation": 0,
+		"exposure_mode": "auto",
+		"meter.mode": "average",
+		"awb_mode": "auto",
+		"image_effect": "none",
+		"color_effects": null,
+		"rotation": 0,
+		"hflip": false,
+		"vflip": false,
+		"crop": [0.0, 0.0, 1.0, 1.0]
+	},
+	"pictures": {
+		"num_pictures":1,
+		"first_delay":5,
+		"following_delay":5
+	},
+	"button_pin":17
+}
