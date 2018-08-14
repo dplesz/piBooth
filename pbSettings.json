@@ -1,7 +1,7 @@
 {
 	"camera": {
-		"image_width": 2592,
-		"image_height": 1944,
+		"image_width": 2560,
+		"image_height": 1920,
 		"framerate": 24,
 		"sharpness": 0,
 		"contrast": 0,
@@ -25,5 +25,9 @@
 		"first_delay":5,
 		"following_delay":5
 	},
-	"button_pin":17
+	"button_pin":17,
+	"screen": {
+		"height":1080,
+		"width" :1920
+	}
 }
