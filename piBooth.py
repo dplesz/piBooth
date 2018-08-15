@@ -55,7 +55,13 @@ def importSettings():
                 return dictionary[key]
             else:
                 return default
-           
+        
+        # Just in case we don't have the groups set up in the config file
+        if "camera" not in settings: settings["camera"] = {}
+        if "pictures" not in settings : settings["pictures"] = {}
+        if "screen" not in settings : settings["screen"] = {}
+        
+                                                 
         # set program settings
         button_pin = maybeGetValue(settings,"button_pin",17)
         num_pictures = maybeGetValue(settings["pictures"],"num_pictures",1)
@@ -101,20 +107,21 @@ def capturePicture():
 
 def addPreviewOverlay(xcoord,ycoord,fontSize,overlayText):
     global overlay_renderer
-    img = Image.new("RGB", (screen_width, screen_height))
+    img = Image.new("RGBA", (screen_width, screen_height),color=(0,0,0,0))
     draw = ImageDraw.Draw(img)
     draw.font = ImageFont.truetype(
                     "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",fontSize)
-    draw.text((xcoord,ycoord), overlayText, (255, 20, 147))
+    draw.text((xcoord,ycoord), overlayText, (255, 20, 147,255))
     print("addPreview {}",overlayText)
 
+    # remove overlay before adding a new one -- help keep layers in check.
     if overlay_renderer:
         camera.remove_overlay(overlay_renderer)
+        
     overlay_renderer = camera.add_overlay(img.tobytes(),
                                               layer=3,
                                               size=img.size,
-                                              format='rgb',
-                                              alpha=128);
+                                              format='rgba');
 
 def cleanUp():
     GPIO.cleanup()

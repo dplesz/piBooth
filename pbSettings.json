@@ -29,5 +29,9 @@
 	"screen": {
 		"height":1080,
 		"width" :1920
+	},
+	"text": {
+		"color": [255,40,147,255],
+		"font": "/usr/share/fonts/truetype/freefont/FreeSerif.ttf"
 	}
 }
