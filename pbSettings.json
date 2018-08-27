@@ -33,5 +33,11 @@
 	"text": {
 		"color": [255,40,147,255],
 		"font": "/usr/share/fonts/truetype/freefont/FreeSerif.ttf"
-	}
+	},
+	"messages":[
+		{"text":"say quack!",
+		"sound":"quack.mp3"},
+		{"text":"say cheese!",
+		"sound":"cheese.mp3"}
+	]
 }
