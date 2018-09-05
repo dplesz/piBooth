@@ -2,12 +2,13 @@ import picamera
 import time
 import os
 import json
+import pygame
 import RPi.GPIO as GPIO
 from PIL import Image, ImageDraw, ImageFont
 
-prevButtonStatus = False
-timePressed = 0
-takingPictures = False
+prev_button_status = False
+time_pressed = 0
+taking_pictures = False
 button_pin = 17
 num_pictures = 1
 first_delay = 5
@@ -20,113 +21,129 @@ text_font = None
 messages = []
 
 
-def onButtonDown():
-    global prevButtonStatus
-    if (prevButtonStatus == False):
-        prevButtonStatus = True
+def setup_directories():
+    file_list = os.listdir()
+    if 'pbSettings.json' not in file_list:
+        f = open('pbsettins.json', 'w+')
+        f.write('{}')
+        f.close()
+    if 'images' not in file_list:
+        os.mkdir('images', 0o777)
+    if 'sounds' not in file_list:
+        os.mkdir('sounds', 0o777)
 
 
-def onButtonUp():
-    global prevButtonStatus
-    if ((prevButtonStatus == True) and
-            not takingPictures):
-        prevButtonStatus = False
-        takePictures()
+def on_button_down():
+    global prev_button_status
+    if not prev_button_status:
+        prev_button_status = True
 
 
-def takePictures():
-    global takingPictures
-    takingPictures = True
+def on_button_up():
+    global prev_button_status
+    if prev_button_status and not taking_pictures:
+        prev_button_status = False
+        take_pictures()
+
+
+def take_pictures():
+    global taking_pictures
+    taking_pictures = True
     for i in range(0, first_delay):
-        addPreviewOverlay(20, 200, 55, str(first_delay - i))
+        add_preview_overlay(20, 200, 55, str(first_delay - i))
         time.sleep(1)
     for i in range(0, num_pictures):
-        capturePicture()
+        capture_picture()
         if i < (num_pictures - 1):
             for j in range(0, following_delay):
-                addPreviewOverlay(20, 200, 55, str(following_delay - j))
+                add_preview_overlay(20, 200, 55, str(following_delay - j))
                 time.sleep(1)
-    addPreviewOverlay(20, 200, 55, "Press red button to begin!")
-    takingPictures = False
+    add_preview_overlay(20, 200, 55, 'Press red button to begin!')
+    taking_pictures = False
 
 
-def importSettings():
+def import_settings():
     global button_pin, first_delay, following_delay, num_pictures, screen_width, screen_height, text_color, text_font
     try:
         configFile = open('pbSettings.json')
         settings = json.load(configFile)
 
-        def maybeGetValue(dictionary, key, default):
+        def maybe_get_value(dictionary, key, default):
             if key in dictionary:
                 return dictionary[key]
             else:
                 return default
 
         # Just in case we don't have the groups set up correctly in the config file
-        if "camera" not in settings: settings["camera"] = {}
-        if "crop" not in settings["camera"]: settings["camera"]["crop"] = []
-        if "pictures" not in settings: settings["pictures"] = {}
-        if "screen" not in settings: settings["screen"] = {}
-        if "text" not in settings: settings["text"] = {}
-        if "color" not in settings["text"]: settings["text"]["color"] = []
-        if "messages" not in settings: settings["messages"] = []
+        if 'camera' not in settings: settings['camera'] = {}
+        if 'crop' not in settings['camera']: settings['camera']['crop'] = []
+        if 'pictures' not in settings: settings['pictures'] = {}
+        if 'screen' not in settings: settings['screen'] = {}
+        if 'text' not in settings: settings['text'] = {}
+        if 'color' not in settings['text']: settings['text']['color'] = []
+        if 'messages' not in settings: settings['messages'] = []
 
         # set program settings
-        button_pin = maybeGetValue(settings, "button_pin", 17)
-        num_pictures = maybeGetValue(settings["pictures"], "num_pictures", 1)
-        first_delay = maybeGetValue(settings["pictures"], "first_delay", 5)
-        following_delay = maybeGetValue(settings["pictures"], "following_delay", 5)
-        screen_width = maybeGetValue(settings["screen"], "width", 1920)
-        screen_height = maybeGetValue(settings["screen"], "height", 1080)
-        text_color = (maybeGetValue(settings["text"]["color"], 0, 255),
-                      maybeGetValue(settings["text"]["color"], 1, 40),
-                      maybeGetValue(settings["text"]["color"], 2, 147),
-                      maybeGetValue(settings["text"]["color"], 3, 255))
-        text_font = maybeGetValue(settings["text"], "font", "/usr/share/fonts/truetype/freefont/FreeSerif.ttf")
-        for i in settings["messages"]:
-            if "sound" in settings["messages"][i] and "text" in settings["messages"][i]:
-                messages[i]["text"] = settings["messages"][i]["text"]
-                messages[i]["sound"] = settings["messages"][i]["sound"]
+        button_pin = maybe_get_value(settings, 'button_pin', 17)
+        num_pictures = maybe_get_value(settings['pictures'], 'num_pictures', 1)
+        first_delay = maybe_get_value(settings['pictures'], 'first_delay', 5)
+        following_delay = maybe_get_value(settings['pictures'], 'following_delay', 5)
+        screen_width = maybe_get_value(settings['screen'], 'width', 1920)
+        screen_height = maybe_get_value(settings['screen'], 'height', 1080)
+        text_color = (maybe_get_value(settings['text']['color'], 0, 255),
+                      maybe_get_value(settings['text']['color'], 1, 40),
+                      maybe_get_value(settings['text']['color'], 2, 147),
+                      maybe_get_value(settings['text']['color'], 3, 255))
+        text_font = maybe_get_value(settings['text'], 'font', '/usr/share/fonts/truetype/freefont/FreeSerif.ttf')
+        os.chdir('sounds')
+        for i in settings['messages']:
+            if 'sound' in settings['messages'][i] and 'text' in settings['messages'][i]:
+                messages[i]['text'] = settings['messages'][i]['text']
+                messages[i]['sound'] = settings['messages'][i]['sound']
+                pygame.mixer.music.load(messages[i]['sound'])
+        os.chdir('..')
 
         # set PiCamera settings.
-        camera.resolution = (maybeGetValue(settings["camera"], "image_width", 1920),
-                             maybeGetValue(settings["camera"], "image_height", 1080))
-        camera.framerate = maybeGetValue(settings["camera"], "framerate", 24)
-        camera.sharpness = maybeGetValue(settings["camera"], "sharpness", 0)
-        camera.contrast = maybeGetValue(settings["camera"], "contrast", 0)
-        camera.brightness = maybeGetValue(settings["camera"], "brightness", 50)
-        camera.saturation = maybeGetValue(settings["camera"], "saturation", 0)
-        camera.ISO = maybeGetValue(settings["camera"], "ISO", 0)
-        camera.video_stabilization = maybeGetValue(settings["camera"], "video_stabilization", False)
-        camera.exposure_compensation = maybeGetValue(settings["camera"], "exposure_compensation", 0)
-        camera.exposure_mode = maybeGetValue(settings["camera"], "exposure_mode", 'auto')
-        camera.meter_mode = maybeGetValue(settings["camera"], "meter_mode", 'average')
-        camera.awb_mode = maybeGetValue(settings["camera"], "awb_mode", 'auto')
-        camera.image_effect = maybeGetValue(settings["camera"], "image_effect", 'none')
-        camera.color_effects = maybeGetValue(settings["camera"], "color_effects", None)
-        camera.rotation = maybeGetValue(settings["camera"], "rotation", 0)
-        camera.hflip = maybeGetValue(settings["camera"], "hflip", False)
-        camera.vflip = maybeGetValue(settings["camera"], "vflip", False)
-        camera.crop = (maybeGetValue(settings["camera"]["crop"], 0, 0.0),
-                       maybeGetValue(settings["camera"]["crop"], 1, 0.0),
-                       maybeGetValue(settings["camera"]["crop"], 2, 1.0),
-                       maybeGetValue(settings["camera"]["crop"], 3, 1.0))
+        camera.resolution = (maybe_get_value(settings['camera'], 'image_width', 1920),
+                             maybe_get_value(settings['camera'], 'image_height', 1080))
+        camera.framerate = maybe_get_value(settings['camera'], 'framerate', 24)
+        camera.sharpness = maybe_get_value(settings['camera'], 'sharpness', 0)
+        camera.contrast = maybe_get_value(settings['camera'], 'contrast', 0)
+        camera.brightness = maybe_get_value(settings['camera'], 'brightness', 50)
+        camera.saturation = maybe_get_value(settings['camera'], 'saturation', 0)
+        camera.ISO = maybe_get_value(settings['camera'], 'ISO', 0)
+        camera.video_stabilization = maybe_get_value(settings['camera'], 'video_stabilization', False)
+        camera.exposure_compensation = maybe_get_value(settings['camera'], 'exposure_compensation', 0)
+        camera.exposure_mode = maybe_get_value(settings['camera'], 'exposure_mode', 'auto')
+        camera.meter_mode = maybe_get_value(settings['camera'], 'meter_mode', 'average')
+        camera.awb_mode = maybe_get_value(settings['camera'], 'awb_mode', 'auto')
+        camera.image_effect = maybe_get_value(settings['camera'], 'image_effect', 'none')
+        camera.color_effects = maybe_get_value(settings['camera'], 'color_effects', None)
+        camera.rotation = maybe_get_value(settings['camera'], 'rotation', 0)
+        camera.hflip = maybe_get_value(settings['camera'], 'hflip', False)
+        camera.vflip = maybe_get_value(settings['camera'], 'vflip', False)
+        camera.crop = (maybe_get_value(settings['camera']['crop'], 0, 0.0),
+                       maybe_get_value(settings['camera']['crop'], 1, 0.0),
+                       maybe_get_value(settings['camera']['crop'], 2, 1.0),
+                       maybe_get_value(settings['camera']['crop'], 3, 1.0))
     except BaseException as err:
-        print("Import Error: {}".format(err))
+        print('Import Error: {}'.format(err))
     finally:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
-def capturePicture():
-    imageTime = time.strftime("%Y-%m-%d-%H-%M-%S")
-    imageName = "Image{}.jpg".format(imageTime)
+def capture_picture():
+    os.chdir('images')
+    imageTime = time.strftime('%Y-%m-%d-%H-%M-%S')
+    imageName = 'Image{}.jpg'.format(imageTime)
     camera.capture(imageName)
+    os.chdir('..')
 
 
-def addPreviewOverlay(xcoord, ycoord, fontSize, overlayText):
+def add_preview_overlay(xcoord, ycoord, fontSize, overlayText):
     global overlay_renderer
-    img = Image.new("RGBA", (screen_width, screen_height), color=(0, 0, 0, 0))
+    img = Image.new('RGBA', (screen_width, screen_height), color=(0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     draw.font = ImageFont.truetype(
         text_font, fontSize)
@@ -142,7 +159,7 @@ def addPreviewOverlay(xcoord, ycoord, fontSize, overlayText):
                                           format='rgba');
 
 
-def cleanUp():
+def clean_up():
     GPIO.cleanup()
     if overlay_renderer:
         camera.remove_overlay(overlay_renderer)
@@ -151,18 +168,22 @@ def cleanUp():
 
 with picamera.PiCamera() as camera:
     try:
-        importSettings()
+        pygame.mixer.init()
+        setup_directories()
+        import_settings()
         camera.start_preview()
         # the screen is likely not the size of the display, so crop it to fit
-        camera.preview.crop = (320, 420, screen_width, screen_height)
-        addPreviewOverlay(20, 200, 55, "Press red button to begin!")
+        # camera.preview.crop = (320, 420, screen_width, screen_height)
+        camera.preview.fullscreen = True
+        # camera.preview.window = (0,0,screen_width,screen_height)
+        add_preview_overlay(20, 200, 55, 'Press red button to begin!')
         while True:
             inputState = GPIO.input(button_pin)
             if inputState:
-                onButtonDown()
+                on_button_down()
             else:
-                onButtonUp()
+                on_button_up()
     except BaseException as err:
-        print("Error: {}".format(err))
+        print('Error: {}'.format(err))
     finally:
-        cleanUp()
+        clean_up()

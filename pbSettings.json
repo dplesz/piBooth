@@ -37,7 +37,7 @@
 	"messages":[
 		{"text":"say quack!",
 		"sound":"quack.mp3"},
-		{"text":"say cheese!",
-		"sound":"cheese.mp3"}
+		{"text":"BWAMP!!",
+		"sound":"m.mp3"}
 	]
 }
