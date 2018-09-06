@@ -5,6 +5,7 @@ import json
 import pygame
 import RPi.GPIO as GPIO
 from PIL import Image, ImageDraw, ImageFont
+import traceback
 
 prev_button_status = False
 time_pressed = 0
@@ -22,7 +23,7 @@ messages = []
 
 
 def setup_directories():
-    file_list = os.listdir()
+    file_list = os.listdir('.')
     if 'pbSettings.json' not in file_list:
         f = open('pbsettins.json', 'w+')
         f.write('{}')
@@ -63,7 +64,8 @@ def take_pictures():
 
 
 def import_settings():
-    global button_pin, first_delay, following_delay, num_pictures, screen_width, screen_height, text_color, text_font
+    global button_pin, first_delay, following_delay, num_pictures, screen_width,\
+        screen_height, text_color, text_font, messages
     try:
         configFile = open('pbSettings.json')
         settings = json.load(configFile)
@@ -95,12 +97,14 @@ def import_settings():
                       maybe_get_value(settings['text']['color'], 2, 147),
                       maybe_get_value(settings['text']['color'], 3, 255))
         text_font = maybe_get_value(settings['text'], 'font', '/usr/share/fonts/truetype/freefont/FreeSerif.ttf')
+        
+        # setup and load sounds
         os.chdir('sounds')
-        for i in settings['messages']:
-            if 'sound' in settings['messages'][i] and 'text' in settings['messages'][i]:
-                messages[i]['text'] = settings['messages'][i]['text']
-                messages[i]['sound'] = settings['messages'][i]['sound']
-                pygame.mixer.music.load(messages[i]['sound'])
+        for i in range(0, len(settings['messages'])):
+            m = settings['messages'][i]
+            if 'sound' in m and 'text' in m:
+                messages.append({'text': m['text'], 'sound': m['sound']})
+                pygame.mixer.music.load(m['sound'])
         os.chdir('..')
 
         # set PiCamera settings.
@@ -127,7 +131,9 @@ def import_settings():
                        maybe_get_value(settings['camera']['crop'], 2, 1.0),
                        maybe_get_value(settings['camera']['crop'], 3, 1.0))
     except BaseException as err:
-        print('Import Error: {}'.format(err))
+        
+        traceback.print_exc()
+        traceback.print_stack()
     finally:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
