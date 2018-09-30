@@ -148,12 +148,7 @@ def capture_picture():
     camera.capture(imageName)
     os.chdir('..')
 
-<<<<<<< HEAD
-
 def add_preview_overlay(overlayText):
-=======
-def add_preview_overlay(xcoord, ycoord, fontSize, overlayText):
->>>>>>> 97e1f4f53bcd109c5e35a5012420e56f1685de1e
     global overlay_renderer
     img = Image.new('RGBA', (screen_width, screen_height), color=(0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -168,7 +163,7 @@ def add_preview_overlay(xcoord, ycoord, fontSize, overlayText):
     overlay_renderer = camera.add_overlay(img.tobytes(),
                                           layer=3,
                                           size=img.size,
-                                          format='rgba');
+                                          format='rgba')
 
 
 def clean_up():
@@ -185,17 +180,10 @@ with picamera.PiCamera() as camera:
         import_settings()
         camera.start_preview()
         # the screen is likely not the size of the display, so crop it to fit
-<<<<<<< HEAD
         camera.preview.crop = (320, 420, screen_width, screen_height)
         #camera.preview.fullscreen = True
         #camera.preview.window = (320,420,screen_width,screen_height)
         add_preview_overlay('Press red button to begin!')
-=======
-        # camera.preview.crop = (320, 420, screen_width, screen_height)
-        camera.preview.fullscreen = True
-        # camera.preview.window = (0,0,screen_width,screen_height)
-        add_preview_overlay(20, 200, 80, 'Press red button to begin!')
->>>>>>> 97e1f4f53bcd109c5e35a5012420e56f1685de1e
         while True:
             inputState = GPIO.input(button_pin)
             if inputState:
