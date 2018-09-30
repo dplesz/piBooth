@@ -31,7 +31,8 @@
 		"width" :1920
 	},
 	"text": {
-		"color": [255,40,147,255],
+		"color": [255,0,0,255],
+		"size": 80,
 		"font": "/usr/share/fonts/truetype/freefont/FreeSerif.ttf"
 	},
 	"messages":[

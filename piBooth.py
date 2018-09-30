@@ -19,6 +19,7 @@ screen_height = 1080
 overlay_renderer = None
 text_color = None
 text_font = None
+text_size = None
 messages = []
 
 
@@ -51,21 +52,21 @@ def take_pictures():
     global taking_pictures
     taking_pictures = True
     for i in range(0, first_delay):
-        add_preview_overlay(20, 200, 55, str(first_delay - i))
+        add_preview_overlay(str(first_delay - i))
         time.sleep(1)
     for i in range(0, num_pictures):
         capture_picture()
         if i < (num_pictures - 1):
             for j in range(0, following_delay):
-                add_preview_overlay(20, 200, 55, str(following_delay - j))
+                add_preview_overlay(str(following_delay - j))
                 time.sleep(1)
-    add_preview_overlay(20, 200, 55, 'Press red button to begin!')
+    add_preview_overlay('Press red button to begin!')
     taking_pictures = False
 
 
 def import_settings():
     global button_pin, first_delay, following_delay, num_pictures, screen_width,\
-        screen_height, text_color, text_font, messages
+        screen_height, text_color, text_font, text_size, messages
     try:
         configFile = open('pbSettings.json')
         settings = json.load(configFile)
@@ -97,6 +98,7 @@ def import_settings():
                       maybe_get_value(settings['text']['color'], 2, 147),
                       maybe_get_value(settings['text']['color'], 3, 255))
         text_font = maybe_get_value(settings['text'], 'font', '/usr/share/fonts/truetype/freefont/FreeSerif.ttf')
+        text_size = maybe_get_value(settings['text'],'size',50)
         
         # setup and load sounds
         os.chdir('sounds')
@@ -147,13 +149,13 @@ def capture_picture():
     os.chdir('..')
 
 
-def add_preview_overlay(xcoord, ycoord, fontSize, overlayText):
+def add_preview_overlay(overlayText):
     global overlay_renderer
     img = Image.new('RGBA', (screen_width, screen_height), color=(0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.font = ImageFont.truetype(
-        text_font, fontSize)
-    draw.text((xcoord, ycoord), overlayText, text_color)
+    draw.font = ImageFont.truetype(text_font, text_size)
+    t_width, t_height = draw.textsize(overlayText)
+    draw.text(((screen_width-t_width)/2,(screen_height-t_height)/2), overlayText, text_color)
 
     # remove overlay before adding a new one -- help keep layers in check.
     if overlay_renderer:
@@ -179,10 +181,10 @@ with picamera.PiCamera() as camera:
         import_settings()
         camera.start_preview()
         # the screen is likely not the size of the display, so crop it to fit
-        # camera.preview.crop = (320, 420, screen_width, screen_height)
-        camera.preview.fullscreen = True
-        # camera.preview.window = (0,0,screen_width,screen_height)
-        add_preview_overlay(20, 200, 55, 'Press red button to begin!')
+        camera.preview.crop = (320, 420, screen_width, screen_height)
+        #camera.preview.fullscreen = True
+        #camera.preview.window = (320,420,screen_width,screen_height)
+        add_preview_overlay('Press red button to begin!')
         while True:
             inputState = GPIO.input(button_pin)
             if inputState:
